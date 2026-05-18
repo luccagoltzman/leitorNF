@@ -67,6 +67,23 @@ src/
  └── contexts/
 ```
 
+## Problemas com `npm install`?
+
+Se o comando fica rodando sem fim ou falha com `UNABLE_TO_VERIFY_LEAF_SIGNATURE`, o Node/npm não está confiando no certificado HTTPS (antivírus com inspeção SSL, proxy corporativo ou VPN).
+
+**Teste rápido (Node 22+):**
+
+```powershell
+$env:NODE_OPTIONS="--use-system-ca"
+npm install
+```
+
+**Outras opções:**
+
+1. Desative temporariamente a inspeção HTTPS do antivírus ou adicione exceção para `nodejs` e a pasta do projeto.
+2. Mova o projeto para fora do OneDrive (ex.: `C:\dev\leitorNF`) — evita lentidão extrema no `node_modules`.
+3. Habilite progresso: `npm config set progress true`
+
 ## Próximas fases
 
 - Leitura de PDF/DANFE via OCR
