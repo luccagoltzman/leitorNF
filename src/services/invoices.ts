@@ -1,5 +1,6 @@
-import { supabase } from '../lib/supabase'
+import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import type { InvoiceFilters, InvoiceWithItems, ParsedNfe } from '../types/nfe'
+import * as local from './localInvoices'
 
 const BUCKET = 'invoices'
 
@@ -20,10 +21,16 @@ export async function uploadXmlToStorage(
 }
 
 export async function saveInvoiceFromParsed(
-  userId: string,
   parsed: ParsedNfe,
-  arquivoUrl: string,
+  options: { userId?: string; file: File },
 ): Promise<InvoiceWithItems> {
+  if (!isSupabaseConfigured || !options.userId) {
+    return local.saveLocalInvoice(parsed, options.file.name)
+  }
+
+  const arquivoUrl = await uploadXmlToStorage(options.userId, options.file)
+  const userId = options.userId
+
   const { data: invoice, error: invoiceError } = await supabase
     .from('invoices')
     .insert({
@@ -75,6 +82,10 @@ export async function saveInvoiceFromParsed(
 export async function fetchInvoices(
   filters?: InvoiceFilters,
 ): Promise<InvoiceWithItems[]> {
+  if (!isSupabaseConfigured) {
+    return local.fetchLocalInvoices(filters)
+  }
+
   let query = supabase
     .from('invoices')
     .select('*, invoice_items(*)')
@@ -99,6 +110,10 @@ export async function fetchInvoices(
 }
 
 export async function fetchInvoiceById(id: string): Promise<InvoiceWithItems> {
+  if (!isSupabaseConfigured) {
+    return local.fetchLocalInvoiceById(id)
+  }
+
   const { data, error } = await supabase
     .from('invoices')
     .select('*, invoice_items(*)')
@@ -110,6 +125,11 @@ export async function fetchInvoiceById(id: string): Promise<InvoiceWithItems> {
 }
 
 export async function deleteInvoice(id: string): Promise<void> {
+  if (!isSupabaseConfigured) {
+    local.deleteLocalInvoice(id)
+    return
+  }
+
   const { error } = await supabase.from('invoices').delete().eq('id', id)
   if (error) throw error
 }

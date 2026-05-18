@@ -1,6 +1,5 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { Layout } from './components/Layout'
-import { ProtectedRoute } from './components/ProtectedRoute'
 import { AuthProvider } from './contexts/AuthContext'
 import { DashboardPage } from './pages/DashboardPage'
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage'
@@ -18,12 +17,10 @@ export default function App() {
           <Route path="/cadastro" element={<RegisterPage />} />
           <Route path="/recuperar-senha" element={<ForgotPasswordPage />} />
 
-          <Route element={<ProtectedRoute />}>
-            <Route element={<Layout />}>
-              <Route index element={<DashboardPage />} />
-              <Route path="upload" element={<UploadPage />} />
-              <Route path="notas/:id" element={<InvoiceDetailPage />} />
-            </Route>
+          <Route element={<Layout />}>
+            <Route index element={<DashboardPage />} />
+            <Route path="upload" element={<UploadPage />} />
+            <Route path="notas/:id" element={<InvoiceDetailPage />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

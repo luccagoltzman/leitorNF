@@ -1,5 +1,5 @@
 import { Link, NavLink, Outlet } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
+import { isSupabaseConfigured } from '../lib/supabase'
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   `rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
@@ -9,8 +9,6 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   }`
 
 export function Layout() {
-  const { user, signOut } = useAuth()
-
   return (
     <div className="min-h-screen">
       <header className="border-b border-border bg-card shadow-sm">
@@ -31,16 +29,11 @@ export function Layout() {
             </NavLink>
           </nav>
 
-          <div className="flex items-center gap-3">
-            <span className="hidden text-sm text-muted sm:inline">{user?.email}</span>
-            <button
-              type="button"
-              onClick={() => signOut()}
-              className="rounded-lg border border-border px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-            >
-              Sair
-            </button>
-          </div>
+          {!isSupabaseConfigured && (
+            <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800">
+              Modo local
+            </span>
+          )}
         </div>
       </header>
 

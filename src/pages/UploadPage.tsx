@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { FileUpload } from '../components/FileUpload'
-import { useAuth } from '../contexts/AuthContext'
-import { saveInvoiceFromParsed, uploadXmlToStorage } from '../services/invoices'
+import { saveInvoiceFromParsed } from '../services/invoices'
 import { parseNfeXml, readXmlFile } from '../utils/xmlParser'
 
 interface UploadItem {
@@ -12,14 +12,12 @@ interface UploadItem {
 }
 
 export function UploadPage() {
-  const { user } = useAuth()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const [queue, setQueue] = useState<UploadItem[]>([])
   const [processing, setProcessing] = useState(false)
 
   async function processFiles(files: File[]) {
-    if (!user) return
-
     const items: UploadItem[] = files.map((file) => ({ file, status: 'pending' }))
     setQueue((prev) => [...prev, ...items])
     setProcessing(true)
@@ -35,8 +33,7 @@ export function UploadPage() {
       try {
         const xml = await readXmlFile(file)
         const parsed = parseNfeXml(xml)
-        const arquivoUrl = await uploadXmlToStorage(user.id, file)
-        const saved = await saveInvoiceFromParsed(user.id, parsed, arquivoUrl)
+        const saved = await saveInvoiceFromParsed(parsed, { file })
 
         setQueue((prev) =>
           prev.map((item) =>
@@ -56,6 +53,7 @@ export function UploadPage() {
     }
 
     setProcessing(false)
+    queryClient.invalidateQueries({ queryKey: ['invoices'] })
   }
 
   const doneCount = queue.filter((q) => q.status === 'done').length

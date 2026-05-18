@@ -45,7 +45,7 @@ function toString(value: unknown): string {
 function extractChave(infNFe: Record<string, unknown>, prot?: Record<string, unknown>): string {
   const id = toString(infNFe['@_Id'])
   if (id.startsWith('NFe')) return id.slice(3)
-  const infProt = asRecord(pick(prot, 'infProt'))
+  const infProt = prot ? asRecord(pick(prot, 'infProt')) : null
   return toString(pick<string>(infProt, 'chNFe'))
 }
 
@@ -146,7 +146,11 @@ export function parseNfeXml(xmlContent: string): ParsedNfe {
   const icmsTot = asRecord(pick(total, 'ICMSTot', 'icmsTot'))
   const protNFe = asRecord(pick(nfeProc ?? root, 'protNFe', 'protNfe'))
 
-  const detList = toArray(pick<Record<string, unknown>>(infNFe, 'det'))
+  const detRaw = toArray(pick(infNFe, 'det'))
+  const detList = detRaw.filter(
+    (d): d is Record<string, unknown> =>
+      typeof d === 'object' && d !== null && !Array.isArray(d),
+  )
   const produtos = parseProdutos(detList)
 
   const destDoc =
