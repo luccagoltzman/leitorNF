@@ -1,7 +1,15 @@
+import { isProductionBuild } from './env'
 import { isSupabaseConfigured, supabase } from './supabase'
 
-export const SUPABASE_NOT_CONFIGURED_MSG =
-  'Configure VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY no arquivo .env na raiz do projeto.'
+export const SUPABASE_NOT_CONFIGURED_MSG_LOCAL =
+  'Crie o arquivo .env na raiz do projeto (copie de .env.example) com VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY, depois reinicie o npm run dev.'
+
+export const SUPABASE_NOT_CONFIGURED_MSG_PRODUCTION =
+  'No painel da hospedagem (Vercel, Netlify, etc.), cadastre as variáveis VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY e faça um novo deploy. O Vite só incorpora essas variáveis na hora do build — alterar só no servidor sem rebuild não funciona.'
+
+export const SUPABASE_NOT_CONFIGURED_MSG = isProductionBuild
+  ? SUPABASE_NOT_CONFIGURED_MSG_PRODUCTION
+  : SUPABASE_NOT_CONFIGURED_MSG_LOCAL
 
 export const LOGIN_REQUIRED_MSG =
   'Faça login para usar o sistema.'

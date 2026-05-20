@@ -3,6 +3,7 @@ import { FormEvent, useState, type ReactNode } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { isSupabaseConfigured } from '../lib/supabase'
+import { SupabaseSetupNotice } from '../components/SupabaseSetupNotice'
 
 export function LoginPage() {
   const { user, signIn, signInWithGoogle, loading } = useAuth()
@@ -15,6 +16,14 @@ export function LoginPage() {
 
   if (!loading && user) {
     return <Navigate to="/" replace />
+  }
+
+  if (!isSupabaseConfigured) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-12">
+        <SupabaseSetupNotice />
+      </div>
+    )
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -37,13 +46,6 @@ export function LoginPage() {
       title="Entrar"
       subtitle="Acesse sua conta para gerenciar notas fiscais"
     >
-      {!isSupabaseConfigured && (
-        <p className="mb-4 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
-          Configure o arquivo <code className="font-mono">.env</code> com as
-          credenciais do Supabase.
-        </p>
-      )}
-
       <form onSubmit={handleSubmit} className="space-y-4">
         <Field label="E-mail" type="email" value={email} onChange={setEmail} required />
         <Field

@@ -1,0 +1,1 @@
+window.__RUNTIME_CONFIG__={"VITE_SUPABASE_URL":"https://lgwnugfpxyjaejnvdimk.supabase.co","VITE_SUPABASE_ANON_KEY":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxnd251Z2ZweHlqYWVqbnZkaW1rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMjg5NjEsImV4cCI6MjA5NDcwNDk2MX0.t-8Wrw3yzGgzOkC4-QG_t06eOLRjDYrPBVmmKQU1puQ"};

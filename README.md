@@ -61,9 +61,21 @@ npm run dev
 
 Acesse `http://localhost:5173`
 
-### 4. Deploy (sugestão)
+### 4. Deploy em produção (importante)
 
-- Frontend: [Vercel](https://vercel.com) — defina as mesmas variáveis `VITE_*`
+O Vite **incorpora** `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` **no momento do build**. Se o deploy for feito sem essas variáveis, o site em produção mostra “Supabase não configurado”.
+
+**Vercel (exemplo):**
+
+1. Project → **Settings** → **Environment Variables**
+2. Adicione (ambiente **Production**):
+   - `VITE_SUPABASE_URL` = `https://seu-projeto.supabase.co` (sem `/rest/v1/`)
+   - `VITE_SUPABASE_ANON_KEY` = chave **anon** ou **publishable** do Supabase
+3. **Deployments** → último deploy → **Redeploy** (obrigatório após criar as variáveis)
+
+O script `prebuild` gera também `public/runtime-config.js` com os mesmos valores.
+
+- Frontend: [Vercel](https://vercel.com) ou Netlify
 - Backend: Supabase (já hospedado)
 
 ## Estrutura

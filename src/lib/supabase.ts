@@ -1,17 +1,17 @@
 import { createClient } from '@supabase/supabase-js'
+import { getSupabaseEnv, isSupabaseEnvConfigured } from './env'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+const { url: supabaseUrl, key: supabaseAnonKey } = getSupabaseEnv()
 
-if (!supabaseUrl || !supabaseAnonKey) {
+if (!isSupabaseEnvConfigured()) {
   console.warn(
-    'Variáveis VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY não configuradas. Copie .env.example para .env',
+    '[Leitor NF-e] Supabase não configurado: defina VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY no build (arquivo .env local ou variáveis no painel da hospedagem).',
   )
 }
 
 export const supabase = createClient(
-  supabaseUrl ?? 'https://placeholder.supabase.co',
-  supabaseAnonKey ?? 'placeholder',
+  supabaseUrl || 'https://placeholder.supabase.co',
+  supabaseAnonKey || 'placeholder',
 )
 
-export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey)
+export const isSupabaseConfigured = isSupabaseEnvConfigured()
