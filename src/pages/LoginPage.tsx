@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query'
 import { FormEvent, useState, type ReactNode } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
@@ -6,6 +7,7 @@ import { isSupabaseConfigured } from '../lib/supabase'
 export function LoginPage() {
   const { user, signIn, signInWithGoogle, loading } = useAuth()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -21,6 +23,7 @@ export function LoginPage() {
     setSubmitting(true)
     try {
       await signIn(email, password)
+      await queryClient.invalidateQueries({ queryKey: ['invoices'] })
       navigate('/')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Falha ao entrar')

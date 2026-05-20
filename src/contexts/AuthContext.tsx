@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import type { Session, User } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import * as authService from '../services/auth'
@@ -25,6 +26,7 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient()
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -39,10 +41,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } = supabase.auth.onAuthStateChange((_event, newSession) => {
       setSession(newSession)
       setLoading(false)
+      queryClient.invalidateQueries({ queryKey: ['invoices'] })
     })
 
     return () => subscription.unsubscribe()
-  }, [])
+  }, [queryClient])
 
   const signIn = useCallback(async (email: string, password: string) => {
     const { session: s } = await authService.signIn(email, password)

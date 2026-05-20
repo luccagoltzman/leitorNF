@@ -1,4 +1,6 @@
+import { useQueryClient } from '@tanstack/react-query'
 import { Link, NavLink, Outlet } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
 import { isSupabaseConfigured } from '../lib/supabase'
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
@@ -9,6 +11,14 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   }`
 
 export function Layout() {
+  const { user, signOut, loading } = useAuth()
+  const queryClient = useQueryClient()
+
+  async function handleSignOut() {
+    await signOut()
+    queryClient.invalidateQueries({ queryKey: ['invoices'] })
+  }
+
   return (
     <div className="min-h-screen">
       <header className="border-b border-border bg-card shadow-sm">
@@ -29,11 +39,43 @@ export function Layout() {
             </NavLink>
           </nav>
 
-          {!isSupabaseConfigured && (
-            <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800">
-              Modo local
-            </span>
-          )}
+          <div className="flex items-center gap-3">
+            {!loading && user ? (
+              <>
+                <span className="hidden max-w-[200px] truncate text-sm text-muted sm:inline">
+                  {user.email}
+                </span>
+                <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-800">
+                  Supabase
+                </span>
+                <button
+                  type="button"
+                  onClick={handleSignOut}
+                  className="rounded-lg border border-border px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                >
+                  Sair
+                </button>
+              </>
+            ) : (
+              <>
+                {isSupabaseConfigured ? (
+                  <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800">
+                    Sem login
+                  </span>
+                ) : (
+                  <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800">
+                    Modo local
+                  </span>
+                )}
+                <Link
+                  to="/login"
+                  className="rounded-lg bg-primary-600 px-3 py-2 text-sm font-medium text-white hover:bg-primary-700"
+                >
+                  Entrar
+                </Link>
+              </>
+            )}
+          </div>
         </div>
       </header>
 

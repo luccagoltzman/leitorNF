@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
+import { useAuth } from '../contexts/AuthContext'
 import { FileUpload } from '../components/FileUpload'
 import { saveInvoiceFromParsed } from '../services/invoices'
 import { parseNfeXml, readXmlFile } from '../utils/xmlParser'
@@ -12,6 +13,7 @@ interface UploadItem {
 }
 
 export function UploadPage() {
+  const { user } = useAuth()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [queue, setQueue] = useState<UploadItem[]>([])
@@ -33,7 +35,10 @@ export function UploadPage() {
       try {
         const xml = await readXmlFile(file)
         const parsed = parseNfeXml(xml)
-        const saved = await saveInvoiceFromParsed(parsed, { file })
+        const saved = await saveInvoiceFromParsed(parsed, {
+          file,
+          userId: user?.id,
+        })
 
         setQueue((prev) =>
           prev.map((item) =>
@@ -64,6 +69,9 @@ export function UploadPage() {
         <h1 className="text-2xl font-bold text-slate-900">Upload de NF-e</h1>
         <p className="mt-1 text-sm text-muted">
           Envie arquivos XML da NF-e para leitura automática (MVP — sem PDF/OCR)
+          {user
+            ? ' · salvando no Supabase'
+            : ' · faça login para salvar na nuvem'}
         </p>
       </div>
 

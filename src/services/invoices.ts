@@ -1,8 +1,27 @@
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import type { InvoiceFilters, InvoiceWithItems, ParsedNfe } from '../types/nfe'
+import { isSchemaMissingError } from '../utils/supabaseErrors'
 import * as local from './localInvoices'
 
 const BUCKET = 'invoices'
+
+async function shouldUseLocalStorage(): Promise<boolean> {
+  if (!isSupabaseConfigured) return true
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+  return !session
+}
+
+/** false = tabelas ainda não criadas (404 / PGRST205) */
+export async function isSupabaseSchemaReady(): Promise<boolean> {
+  if (!isSupabaseConfigured) return false
+  const { error } = await supabase
+    .from('invoices')
+    .select('id', { head: true, count: 'exact' })
+  if (error && isSchemaMissingError(error)) return false
+  return !error
+}
 
 export async function uploadXmlToStorage(
   userId: string,
@@ -24,7 +43,7 @@ export async function saveInvoiceFromParsed(
   parsed: ParsedNfe,
   options: { userId?: string; file: File },
 ): Promise<InvoiceWithItems> {
-  if (!isSupabaseConfigured || !options.userId) {
+  if ((await shouldUseLocalStorage()) || !options.userId) {
     return local.saveLocalInvoice(parsed, options.file.name)
   }
 
@@ -82,7 +101,7 @@ export async function saveInvoiceFromParsed(
 export async function fetchInvoices(
   filters?: InvoiceFilters,
 ): Promise<InvoiceWithItems[]> {
-  if (!isSupabaseConfigured) {
+  if (await shouldUseLocalStorage()) {
     return local.fetchLocalInvoices(filters)
   }
 
@@ -105,12 +124,18 @@ export async function fetchInvoices(
   }
 
   const { data, error } = await query
-  if (error) throw error
+  if (error) {
+    if (isSchemaMissingError(error)) {
+      console.warn('[Supabase] Tabelas não encontradas — usando dados locais.')
+      return local.fetchLocalInvoices(filters)
+    }
+    throw error
+  }
   return (data ?? []) as InvoiceWithItems[]
 }
 
 export async function fetchInvoiceById(id: string): Promise<InvoiceWithItems> {
-  if (!isSupabaseConfigured) {
+  if (await shouldUseLocalStorage()) {
     return local.fetchLocalInvoiceById(id)
   }
 
@@ -120,16 +145,27 @@ export async function fetchInvoiceById(id: string): Promise<InvoiceWithItems> {
     .eq('id', id)
     .single()
 
-  if (error) throw error
+  if (error) {
+    if (isSchemaMissingError(error)) {
+      return local.fetchLocalInvoiceById(id)
+    }
+    throw error
+  }
   return data as InvoiceWithItems
 }
 
 export async function deleteInvoice(id: string): Promise<void> {
-  if (!isSupabaseConfigured) {
+  if (await shouldUseLocalStorage()) {
     local.deleteLocalInvoice(id)
     return
   }
 
   const { error } = await supabase.from('invoices').delete().eq('id', id)
-  if (error) throw error
+  if (error) {
+    if (isSchemaMissingError(error)) {
+      local.deleteLocalInvoice(id)
+      return
+    }
+    throw error
+  }
 }

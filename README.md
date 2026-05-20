@@ -21,10 +21,21 @@ Sistema para leitura automática de NF-e (XML), armazenamento e exportação par
 
 ### 1. Supabase
 
-1. Crie um projeto em [supabase.com](https://supabase.com)
-2. No **SQL Editor**, execute o arquivo `supabase/migrations/001_initial_schema.sql`
-3. Em **Authentication → Providers**, habilite **Email** e, se desejar, **Google**
-4. Em **Storage**, confirme o bucket `invoices` (a migration cria se possível)
+**Projeto na sua conta:** crie em [supabase.com](https://supabase.com), execute a migration e configure Auth/Storage você mesmo.
+
+**Projeto de outra pessoa (só tem a API key):** peça ao dono do projeto:
+
+| Item | Onde obter |
+|------|------------|
+| `VITE_SUPABASE_URL` | Dashboard → Settings → API → **Project URL** |
+| Chave publishable | Settings → API Keys (a que você já recebeu) |
+| Tabelas + RLS | Executar `supabase/migrations/001_initial_schema.sql` no SQL Editor |
+| Auth (login) | Habilitar Email/Google em Authentication → Providers |
+| Storage | Bucket `invoices` (a migration tenta criar) |
+
+Sem acesso ao dashboard, você **não** consegue rodar migrations nem mudar Auth — o front pode conectar, mas insert/login falham se o banco não estiver preparado.
+
+Enquanto isso, o app funciona em **modo local** (sem `.env` ou sem URL válida): dados no `localStorage` do navegador.
 
 ### 2. Variáveis de ambiente
 

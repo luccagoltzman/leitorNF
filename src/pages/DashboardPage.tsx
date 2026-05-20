@@ -1,16 +1,33 @@
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { InvoiceTable } from '../components/InvoiceTable'
 import { SearchFilters } from '../components/SearchFilters'
 import { useDeleteInvoice, useInvoices } from '../hooks/useInvoices'
+import { isSupabaseSchemaReady } from '../services/invoices'
+import {
+  clearLocalInvoices,
+  getLocalInvoiceCount,
+} from '../services/localInvoices'
 import type { InvoiceFilters } from '../types/nfe'
 import { exportInvoiceToExcel, exportInvoicesListToExcel } from '../utils/excelExport'
 import { formatCurrency } from '../utils/format'
+import { SCHEMA_MISSING_HINT } from '../utils/supabaseErrors'
+import { isSupabaseConfigured } from '../lib/supabase'
+import { useAuth } from '../contexts/AuthContext'
 
 export function DashboardPage() {
+  const { user } = useAuth()
+  const queryClient = useQueryClient()
   const [filters, setFilters] = useState<InvoiceFilters>({})
   const { data: invoices = [], isLoading, error } = useInvoices(filters)
   const deleteMutation = useDeleteInvoice()
+  const localCount = getLocalInvoiceCount()
+  const { data: schemaReady } = useQuery({
+    queryKey: ['supabase-schema'],
+    queryFn: isSupabaseSchemaReady,
+    enabled: isSupabaseConfigured,
+  })
 
   const stats = useMemo(() => {
     const total = invoices.reduce((sum, inv) => sum + (inv.valor_total ?? 0), 0)
@@ -51,6 +68,41 @@ export function DashboardPage() {
       </div>
 
       <SearchFilters filters={filters} onChange={setFilters} />
+
+      {isSupabaseConfigured && schemaReady === false && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <p className="font-medium">Banco ainda não configurado no Supabase</p>
+          <p className="mt-1">{SCHEMA_MISSING_HINT}</p>
+          <p className="mt-2 text-amber-800">
+            Enquanto isso, exibindo notas salvas localmente neste navegador.
+          </p>
+        </div>
+      )}
+
+      {!user && localCount > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-slate-50 px-4 py-3 text-sm text-slate-700">
+          <span>
+            {localCount} nota(s) salva(s) neste navegador (limite ~5 MB). Faça login
+            para gravar no Supabase.
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              if (
+                confirm(
+                  'Apagar todas as notas salvas localmente neste navegador?',
+                )
+              ) {
+                clearLocalInvoices()
+                queryClient.invalidateQueries({ queryKey: ['invoices'] })
+              }
+            }}
+            className="shrink-0 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-white"
+          >
+            Limpar dados locais
+          </button>
+        </div>
+      )}
 
       {isLoading && (
         <p className="text-center text-sm text-muted">Carregando notas...</p>
