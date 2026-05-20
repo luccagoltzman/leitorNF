@@ -11,6 +11,7 @@ import {
 } from '../services/localInvoices'
 import type { InvoiceFilters } from '../types/nfe'
 import { exportInvoiceToExcel, exportInvoicesListToExcel } from '../utils/excelExport'
+import { exportInvoiceToPdf } from '../utils/pdfExport'
 import { formatCurrency } from '../utils/format'
 import { SCHEMA_MISSING_HINT } from '../utils/supabaseErrors'
 import { isSupabaseConfigured } from '../lib/supabase'
@@ -115,7 +116,8 @@ export function DashboardPage() {
 
       <InvoiceTable
         invoices={invoices}
-        onExport={exportInvoiceToExcel}
+        onExportExcel={exportInvoiceToExcel}
+        onExportPdf={exportInvoiceToPdf}
         onDelete={(id) => {
           if (confirm('Excluir esta nota fiscal?')) {
             deleteMutation.mutate(id)

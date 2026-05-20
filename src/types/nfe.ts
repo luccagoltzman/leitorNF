@@ -55,6 +55,7 @@ export interface Invoice {
   data_emissao: string | null
   natureza_operacao: string | null
   arquivo_url: string | null
+  pdf_url: string | null
   created_at: string
 }
 

@@ -1,11 +1,23 @@
+import { useQuery } from '@tanstack/react-query'
 import { Link, useParams } from 'react-router-dom'
+import { AttachPdfBlock } from '../components/AttachPdfBlock'
 import { InvoiceDetailView } from '../components/InvoiceDetailView'
+import { useAuth } from '../contexts/AuthContext'
 import { useInvoice } from '../hooks/useInvoices'
+import { getInvoiceFileUrls } from '../services/invoices'
 import { exportInvoiceToExcel } from '../utils/excelExport'
+import { exportInvoiceToPdf } from '../utils/pdfExport'
 
 export function InvoiceDetailPage() {
   const { id } = useParams<{ id: string }>()
+  const { user } = useAuth()
   const { data: invoice, isLoading, error } = useInvoice(id)
+
+  const { data: fileUrls } = useQuery({
+    queryKey: ['invoice-files', id],
+    queryFn: () => getInvoiceFileUrls(invoice!),
+    enabled: Boolean(id && invoice && user),
+  })
 
   if (isLoading) {
     return <p className="text-center text-sm text-muted">Carregando nota...</p>
@@ -29,9 +41,13 @@ export function InvoiceDetailPage() {
       <Link to="/" className="text-sm text-primary-600 hover:underline">
         ← Voltar
       </Link>
+      <AttachPdfBlock invoice={invoice} />
       <InvoiceDetailView
         invoice={invoice}
-        onExport={() => exportInvoiceToExcel(invoice)}
+        storedPdfUrl={fileUrls?.pdfUrl}
+        storedXmlUrl={fileUrls?.xmlUrl}
+        onExportExcel={() => exportInvoiceToExcel(invoice)}
+        onExportPdf={() => exportInvoiceToPdf(invoice)}
       />
     </div>
   )

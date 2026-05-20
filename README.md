@@ -14,7 +14,9 @@ Sistema para leitura automática de NF-e (XML), armazenamento e exportação par
 - Parser automático da NF-e
 - Dashboard com histórico, busca e filtros por data
 - Visualização detalhada (emitente, produtos, totais)
-- Exportação Excel (abas Resumo e Produtos)
+- Exportação Excel (abas Resumo e Produtos) e PDF
+- **Cofre de documentos:** XML + PDF no Supabase Storage (mesma pasta do usuário)
+- PDF gerado automaticamente ao processar XML, ou envio do PDF que o cliente já possui
 - RLS: cada usuário acessa apenas suas notas
 
 ## Configuração
@@ -29,7 +31,7 @@ Sistema para leitura automática de NF-e (XML), armazenamento e exportação par
 |------|------------|
 | `VITE_SUPABASE_URL` | Dashboard → Settings → API → **Project URL** |
 | Chave publishable | Settings → API Keys (a que você já recebeu) |
-| Tabelas + RLS | Executar `supabase/migrations/001_initial_schema.sql` no SQL Editor |
+| Tabelas + RLS | Executar `supabase/migrations/001_initial_schema.sql` e `002_add_pdf_url.sql` no SQL Editor |
 | Auth (login) | Habilitar Email/Google em Authentication → Providers |
 | Storage | Bucket `invoices` (a migration tenta criar) |
 

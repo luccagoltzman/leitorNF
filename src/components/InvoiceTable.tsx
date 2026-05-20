@@ -4,11 +4,17 @@ import { formatCurrency, formatDate } from '../utils/format'
 
 interface InvoiceTableProps {
   invoices: InvoiceWithItems[]
-  onExport?: (invoice: InvoiceWithItems) => void
+  onExportExcel?: (invoice: InvoiceWithItems) => void
+  onExportPdf?: (invoice: InvoiceWithItems) => void
   onDelete?: (id: string) => void
 }
 
-export function InvoiceTable({ invoices, onExport, onDelete }: InvoiceTableProps) {
+export function InvoiceTable({
+  invoices,
+  onExportExcel,
+  onExportPdf,
+  onDelete,
+}: InvoiceTableProps) {
   if (!invoices.length) {
     return (
       <div className="rounded-xl border border-dashed border-border bg-card px-6 py-16 text-center">
@@ -48,6 +54,11 @@ export function InvoiceTable({ invoices, onExport, onDelete }: InvoiceTableProps
                     {inv.numero_nf ?? '—'}
                     {inv.serie ? ` / ${inv.serie}` : ''}
                   </Link>
+                  {!inv.pdf_url && (
+                    <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-800">
+                      Sem PDF
+                    </span>
+                  )}
                 </td>
                 <td className="max-w-[200px] truncate px-4 py-3 text-slate-700">
                   {inv.emitente ?? '—'}
@@ -69,10 +80,19 @@ export function InvoiceTable({ invoices, onExport, onDelete }: InvoiceTableProps
                     >
                       Ver
                     </Link>
-                    {onExport && (
+                    {onExportPdf && (
                       <button
                         type="button"
-                        onClick={() => onExport(inv)}
+                        onClick={() => onExportPdf(inv)}
+                        className="rounded-md px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100"
+                      >
+                        PDF
+                      </button>
+                    )}
+                    {onExportExcel && (
+                      <button
+                        type="button"
+                        onClick={() => onExportExcel(inv)}
                         className="rounded-md px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100"
                       >
                         Excel

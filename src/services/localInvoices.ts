@@ -138,6 +138,7 @@ export function saveLocalInvoice(
     data_emissao: parsed.dataEmissao || null,
     natureza_operacao: parsed.naturezaOperacao,
     arquivo_url: arquivoRef,
+    pdf_url: null,
     created_at: now,
     invoice_items,
   }

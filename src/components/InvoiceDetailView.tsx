@@ -8,11 +8,21 @@ import {
 
 interface InvoiceDetailViewProps {
   invoice: InvoiceWithItems
-  onExport?: () => void
+  storedPdfUrl?: string | null
+  storedXmlUrl?: string | null
+  onExportExcel?: () => void
+  onExportPdf?: () => void
 }
 
-export function InvoiceDetailView({ invoice, onExport }: InvoiceDetailViewProps) {
+export function InvoiceDetailView({
+  invoice,
+  storedPdfUrl,
+  storedXmlUrl,
+  onExportExcel,
+  onExportPdf,
+}: InvoiceDetailViewProps) {
   const items = invoice.invoice_items ?? []
+  const hasStored = storedPdfUrl || storedXmlUrl
 
   return (
     <div className="space-y-6">
@@ -26,16 +36,55 @@ export function InvoiceDetailView({ invoice, onExport }: InvoiceDetailViewProps)
             {invoice.natureza_operacao ?? 'Natureza não informada'}
           </p>
         </div>
-        {onExport && (
-          <button
-            type="button"
-            onClick={onExport}
-            className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700"
-          >
-            Exportar Excel
-          </button>
-        )}
+        <div className="flex flex-wrap gap-2">
+          {storedPdfUrl && (
+            <a
+              href={storedPdfUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-lg border border-primary-200 bg-primary-50 px-4 py-2 text-sm font-medium text-primary-700 hover:bg-primary-100"
+            >
+              Abrir PDF da nota
+            </a>
+          )}
+          {storedXmlUrl && (
+            <a
+              href={storedXmlUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              download
+              className="rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            >
+              Baixar XML original
+            </a>
+          )}
+          {onExportPdf && !storedPdfUrl && (
+            <button
+              type="button"
+              onClick={onExportPdf}
+              className="rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            >
+              Exportar resumo PDF
+            </button>
+          )}
+          {onExportExcel && (
+            <button
+              type="button"
+              onClick={onExportExcel}
+              className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700"
+            >
+              Exportar Excel
+            </button>
+          )}
+        </div>
       </div>
+
+      {hasStored && (
+        <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-muted">
+          XML e PDF originais desta NF ficam guardados juntos no cofre do cliente
+          (Supabase Storage).
+        </p>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <InfoCard title="Emitente" value={invoice.emitente ?? '—'} />

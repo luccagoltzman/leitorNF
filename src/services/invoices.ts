@@ -1,9 +1,16 @@
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import type { InvoiceFilters, InvoiceWithItems, ParsedNfe } from '../types/nfe'
-import { isSchemaMissingError } from '../utils/supabaseErrors'
+import {
+  isPdfColumnMissing,
+  isSchemaMissingError,
+  PDF_COLUMN_HINT,
+} from '../utils/supabaseErrors'
 import * as local from './localInvoices'
-
-const BUCKET = 'invoices'
+import {
+  getSignedFileUrl,
+  removeStoragePaths,
+  uploadToStorage,
+} from './storage'
 
 async function shouldUseLocalStorage(): Promise<boolean> {
   if (!isSupabaseConfigured) return true
@@ -13,7 +20,6 @@ async function shouldUseLocalStorage(): Promise<boolean> {
   return !session
 }
 
-/** false = tabelas ainda não criadas (404 / PGRST205) */
 export async function isSupabaseSchemaReady(): Promise<boolean> {
   if (!isSupabaseConfigured) return false
   const { error } = await supabase
@@ -23,32 +29,22 @@ export async function isSupabaseSchemaReady(): Promise<boolean> {
   return !error
 }
 
-export async function uploadXmlToStorage(
-  userId: string,
-  file: File,
-): Promise<string> {
-  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
-  const path = `${userId}/${Date.now()}-${safeName}`
-
-  const { error } = await supabase.storage.from(BUCKET).upload(path, file, {
-    contentType: 'application/xml',
-    upsert: false,
-  })
-  if (error) throw error
-
-  return path
-}
-
-export async function saveInvoiceFromParsed(
+/** Etapa 1: guarda XML, dados da NF e indexação (sem PDF ainda). */
+export async function saveInvoiceFromXml(
   parsed: ParsedNfe,
-  options: { userId?: string; file: File },
+  options: { userId: string; xmlFile: File },
 ): Promise<InvoiceWithItems> {
   if ((await shouldUseLocalStorage()) || !options.userId) {
-    return local.saveLocalInvoice(parsed, options.file.name)
+    throw new Error('Faça login para guardar notas no cofre do cliente.')
   }
 
-  const arquivoUrl = await uploadXmlToStorage(options.userId, options.file)
   const userId = options.userId
+  const xmlPath = await uploadToStorage(
+    userId,
+    options.xmlFile,
+    options.xmlFile.name,
+    'application/xml',
+  )
 
   const { data: invoice, error: invoiceError } = await supabase
     .from('invoices')
@@ -66,12 +62,15 @@ export async function saveInvoiceFromParsed(
       desconto: parsed.totais.desconto,
       data_emissao: parsed.dataEmissao || null,
       natureza_operacao: parsed.naturezaOperacao,
-      arquivo_url: arquivoUrl,
+      arquivo_url: xmlPath,
     })
     .select()
     .single()
 
-  if (invoiceError) throw invoiceError
+  if (invoiceError) {
+    await removeStoragePaths([xmlPath])
+    throw invoiceError
+  }
 
   const itemsPayload = parsed.produtos.map((p) => ({
     invoice_id: invoice.id,
@@ -93,9 +92,63 @@ export async function saveInvoiceFromParsed(
     .insert(itemsPayload)
     .select()
 
-  if (itemsError) throw itemsError
+  if (itemsError) {
+    await removeStoragePaths([xmlPath])
+    await supabase.from('invoices').delete().eq('id', invoice.id)
+    throw itemsError
+  }
 
-  return { ...invoice, invoice_items: items ?? [] }
+  return { ...invoice, invoice_items: items ?? [], pdf_url: null }
+}
+
+/** Etapa 2: anexa o PDF original a uma nota já cadastrada. */
+export async function attachPdfToInvoice(
+  invoiceId: string,
+  pdfFile: File,
+  userId: string,
+): Promise<InvoiceWithItems> {
+  if ((await shouldUseLocalStorage()) || !userId) {
+    throw new Error('Faça login para guardar o PDF no cofre.')
+  }
+
+  const { data: invoice, error: fetchError } = await supabase
+    .from('invoices')
+    .select('*, invoice_items(*)')
+    .eq('id', invoiceId)
+    .eq('user_id', userId)
+    .single()
+
+  if (fetchError || !invoice) {
+    throw new Error('Nota não encontrada.')
+  }
+
+  if (invoice.pdf_url) {
+    throw new Error('Esta nota já possui PDF guardado.')
+  }
+
+  const pdfPath = await uploadToStorage(
+    userId,
+    pdfFile,
+    pdfFile.name,
+    'application/pdf',
+  )
+
+  const { data: updated, error: updateError } = await supabase
+    .from('invoices')
+    .update({ pdf_url: pdfPath })
+    .eq('id', invoiceId)
+    .select('*, invoice_items(*)')
+    .single()
+
+  if (updateError) {
+    await removeStoragePaths([pdfPath])
+    if (isPdfColumnMissing(updateError)) {
+      throw new Error(PDF_COLUMN_HINT)
+    }
+    throw updateError
+  }
+
+  return updated as InvoiceWithItems
 }
 
 export async function fetchInvoices(
@@ -126,7 +179,6 @@ export async function fetchInvoices(
   const { data, error } = await query
   if (error) {
     if (isSchemaMissingError(error)) {
-      console.warn('[Supabase] Tabelas não encontradas — usando dados locais.')
       return local.fetchLocalInvoices(filters)
     }
     throw error
@@ -154,11 +206,31 @@ export async function fetchInvoiceById(id: string): Promise<InvoiceWithItems> {
   return data as InvoiceWithItems
 }
 
+export async function getInvoiceFileUrls(invoice: InvoiceWithItems): Promise<{
+  xmlUrl: string | null
+  pdfUrl: string | null
+}> {
+  if (await shouldUseLocalStorage()) {
+    return { xmlUrl: null, pdfUrl: null }
+  }
+  const [xmlUrl, pdfUrl] = await Promise.all([
+    getSignedFileUrl(invoice.arquivo_url),
+    getSignedFileUrl(invoice.pdf_url),
+  ])
+  return { xmlUrl, pdfUrl }
+}
+
 export async function deleteInvoice(id: string): Promise<void> {
   if (await shouldUseLocalStorage()) {
     local.deleteLocalInvoice(id)
     return
   }
+
+  const { data: invoice } = await supabase
+    .from('invoices')
+    .select('arquivo_url, pdf_url')
+    .eq('id', id)
+    .single()
 
   const { error } = await supabase.from('invoices').delete().eq('id', id)
   if (error) {
@@ -167,5 +239,9 @@ export async function deleteInvoice(id: string): Promise<void> {
       return
     }
     throw error
+  }
+
+  if (invoice) {
+    await removeStoragePaths([invoice.arquivo_url, invoice.pdf_url])
   }
 }
