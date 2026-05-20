@@ -37,7 +37,7 @@ Sistema para leitura automática de NF-e (XML), armazenamento e exportação par
 
 Sem acesso ao dashboard, você **não** consegue rodar migrations nem mudar Auth — o front pode conectar, mas insert/login falham se o banco não estiver preparado.
 
-Enquanto isso, o app funciona em **modo local** (sem `.env` ou sem URL válida): dados no `localStorage` do navegador.
+Execute também `003_bids.sql` para licitações/editais.
 
 ### 2. Variáveis de ambiente
 

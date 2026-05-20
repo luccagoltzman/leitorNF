@@ -37,6 +37,7 @@ export function InvoiceTable({
           <thead className="border-b border-border bg-slate-50 text-xs uppercase tracking-wide text-muted">
             <tr>
               <th className="px-4 py-3 font-medium">NF</th>
+              <th className="px-4 py-3 font-medium">Licitação</th>
               <th className="px-4 py-3 font-medium">Emitente</th>
               <th className="px-4 py-3 font-medium">Emissão</th>
               <th className="px-4 py-3 font-medium text-right">Valor</th>
@@ -63,6 +64,11 @@ export function InvoiceTable({
                     <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-800">
                       Sem PDF
                     </span>
+                  )}
+                </td>
+                <td className="max-w-[140px] truncate px-4 py-3 text-slate-600">
+                  {inv.bid?.titulo ?? (
+                    <span className="text-muted">—</span>
                   )}
                 </td>
                 <td className="max-w-[200px] truncate px-4 py-3 text-slate-700">

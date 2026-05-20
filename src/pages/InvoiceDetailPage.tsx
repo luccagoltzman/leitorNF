@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link, useParams } from 'react-router-dom'
 import { AttachPdfBlock } from '../components/AttachPdfBlock'
+import { BidLinker } from '../components/BidLinker'
 import { InvoiceDetailView } from '../components/InvoiceDetailView'
 import { ProductPriceHistory } from '../components/ProductPriceHistory'
 import { useAuth } from '../contexts/AuthContext'
@@ -43,6 +44,7 @@ export function InvoiceDetailPage() {
       <Link to="/" className="text-sm text-primary-600 hover:underline">
         ← Voltar
       </Link>
+      <BidLinker invoice={invoice} />
       <AttachPdfBlock invoice={invoice} />
       <InvoiceDetailView
         invoice={invoice}

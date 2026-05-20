@@ -174,6 +174,9 @@ export function buildProofPdf(invoice: InvoiceWithItems): jsPDF {
     ['Comprador', invoice.destinatario ?? '-'],
     ['Chave NF-e', invoice.chave_acesso ?? '-'],
     ['Valor total da nota', formatCurrency(invoice.valor_total)],
+    ['Licitação / edital', invoice.bid?.titulo ?? '-'],
+    ['Nº edital', invoice.bid?.numero_edital ?? '-'],
+    ['Órgão', invoice.bid?.orgao ?? '-'],
   ]
 
   autoTable(doc, {

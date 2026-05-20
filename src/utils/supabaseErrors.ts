@@ -30,3 +30,6 @@ export function isPdfColumnMissing(error: unknown): boolean {
 
 export const PDF_COLUMN_HINT =
   'Execute supabase/migrations/002_add_pdf_url.sql no SQL Editor do Supabase (com notify pgrst). Depois recarregue o app.'
+
+export const BIDS_SCHEMA_HINT =
+  'Execute supabase/migrations/003_bids.sql no SQL Editor do Supabase (com notify pgrst). Depois recarregue o app.'

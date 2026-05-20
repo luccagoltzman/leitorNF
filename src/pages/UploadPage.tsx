@@ -1,9 +1,11 @@
 import { useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../contexts/AuthContext'
 import { FileUpload } from '../components/FileUpload'
+import { useBids } from '../hooks/useBids'
 import { useInvoices } from '../hooks/useInvoices'
+import { formatBidLabel } from '../services/bids'
 import { attachPdfToInvoice, saveInvoiceFromXml } from '../services/invoices'
 import { findInvoiceForPdf, validatePdfFile } from '../utils/nfeFilePairs'
 import { parseNfeXml, readXmlFile } from '../utils/xmlParser'
@@ -19,8 +21,10 @@ export function UploadPage() {
   const [error, setError] = useState<string | null>(null)
   const [processing, setProcessing] = useState(false)
   const [selectedInvoiceId, setSelectedInvoiceId] = useState('')
+  const [selectedBidId, setSelectedBidId] = useState('')
 
   const { data: invoices = [] } = useInvoices()
+  const { data: bids = [] } = useBids()
 
   const pendingPdf = useMemo(
     () => invoices.filter((inv) => !inv.pdf_url),
@@ -38,6 +42,7 @@ export function UploadPage() {
       const saved = await saveInvoiceFromXml(parsed, {
         xmlFile: file,
         userId: user.id,
+        bidId: selectedBidId || null,
       })
       setStatus(`NF ${saved.numero_nf} cadastrada. Agora envie o PDF na etapa 2.`)
       queryClient.invalidateQueries({ queryKey: ['invoices'] })
@@ -103,14 +108,6 @@ export function UploadPage() {
         <p className="mt-1 text-sm text-muted">
           Envie <strong>um arquivo por vez</strong>: primeiro o XML, depois o PDF
           da mesma nota.
-          {!user && (
-            <>
-              {' '}
-              <Link to="/login" className="text-primary-600 hover:underline">
-                Faça login
-              </Link>
-            </>
-          )}
         </p>
       </div>
 
@@ -122,7 +119,6 @@ export function UploadPage() {
           type="button"
           className={stepClass('pdf')}
           onClick={() => setStep('pdf')}
-          disabled={!user}
         >
           2. PDF
           {pendingPdf.length > 0 && (
@@ -134,14 +130,36 @@ export function UploadPage() {
       </div>
 
       {step === 'xml' && (
+        <>
+          {bids.length > 0 && (
+            <label className="block">
+              <span className="mb-1 block text-sm font-medium text-slate-700">
+                Vincular à licitação (opcional)
+              </span>
+              <select
+                value={selectedBidId}
+                onChange={(e) => setSelectedBidId(e.target.value)}
+                disabled={processing}
+                className="w-full rounded-lg border border-border px-3 py-2 text-sm"
+              >
+                <option value="">Sem vínculo por enquanto</option>
+                {bids.map((bid) => (
+                  <option key={bid.id} value={bid.id}>
+                    {formatBidLabel(bid)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
         <FileUpload
-          disabled={processing || !user}
+          disabled={processing}
           accept=".xml"
           acceptMime=".xml,application/xml,text/xml"
           title="Enviar XML da NF-e"
           hint="Um arquivo XML por vez. Os dados da nota serão lidos e salvos para busca."
           onFileSelected={handleXml}
         />
+        </>
       )}
 
       {step === 'pdf' && (
@@ -172,7 +190,7 @@ export function UploadPage() {
               </label>
 
               <FileUpload
-                disabled={processing || !user}
+                disabled={processing}
                 accept=".pdf"
                 acceptMime=".pdf,application/pdf"
                 title="Enviar PDF da NF-e"

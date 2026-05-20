@@ -57,6 +57,16 @@ function matchesCompleteness(
   return !hasPdf
 }
 
+function matchesBid(inv: InvoiceWithItems, filters: InvoiceFilters): boolean {
+  if (filters.unlinkedOnly) {
+    return !inv.bid_id
+  }
+  if (filters.bidId) {
+    return inv.bid_id === filters.bidId
+  }
+  return true
+}
+
 function matchesDates(inv: InvoiceWithItems, filters: InvoiceFilters): boolean {
   if (filters.dateFrom && inv.data_emissao) {
     if (inv.data_emissao < filters.dateFrom) return false
@@ -75,6 +85,7 @@ export function filterInvoices(
 
   return invoices.filter((inv) => {
     if (!matchesDates(inv, filters)) return false
+    if (!matchesBid(inv, filters)) return false
     if (!matchesCompleteness(inv, filters.completeness)) return false
 
     const search = filters.search?.trim()

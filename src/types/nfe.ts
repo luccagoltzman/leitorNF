@@ -39,9 +39,30 @@ export interface ParsedNfe {
   }
 }
 
+export interface Bid {
+  id: string
+  user_id: string
+  titulo: string
+  numero_edital: string | null
+  orgao: string | null
+  processo: string | null
+  observacoes: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface BidInput {
+  titulo: string
+  numero_edital?: string
+  orgao?: string
+  processo?: string
+  observacoes?: string
+}
+
 export interface Invoice {
   id: string
   user_id: string
+  bid_id: string | null
   numero_nf: string | null
   serie: string | null
   chave_acesso: string | null
@@ -77,6 +98,7 @@ export interface InvoiceItem {
 
 export interface InvoiceWithItems extends Invoice {
   invoice_items: InvoiceItem[]
+  bid?: Bid | null
 }
 
 export type InvoiceCompletenessFilter = 'all' | 'complete' | 'incomplete'
@@ -87,4 +109,6 @@ export interface InvoiceFilters {
   dateFrom?: string
   dateTo?: string
   completeness?: InvoiceCompletenessFilter
+  bidId?: string
+  unlinkedOnly?: boolean
 }

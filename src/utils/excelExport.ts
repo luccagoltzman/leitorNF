@@ -110,6 +110,9 @@ export function workbookProofExcel(invoice: InvoiceWithItems): XLSX.WorkBook {
     ['Destinatário', invoice.destinatario ?? ''],
     ['Chave de acesso', invoice.chave_acesso ?? ''],
     ['Valor total da NF', invoice.valor_total ?? 0],
+    ['Licitação / edital', invoice.bid?.titulo ?? ''],
+    ['Nº edital', invoice.bid?.numero_edital ?? ''],
+    ['Órgão', invoice.bid?.orgao ?? ''],
     [],
     [
       'Código',
