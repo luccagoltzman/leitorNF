@@ -2,8 +2,9 @@ import { useQuery } from '@tanstack/react-query'
 import { Link, useParams } from 'react-router-dom'
 import { AttachPdfBlock } from '../components/AttachPdfBlock'
 import { InvoiceDetailView } from '../components/InvoiceDetailView'
+import { ProductPriceHistory } from '../components/ProductPriceHistory'
 import { useAuth } from '../contexts/AuthContext'
-import { useInvoice } from '../hooks/useInvoices'
+import { useInvoice, useInvoices } from '../hooks/useInvoices'
 import { getInvoiceFileUrls } from '../services/invoices'
 import { exportInvoiceToExcel } from '../utils/excelExport'
 import { exportInvoiceToPdf } from '../utils/pdfExport'
@@ -12,6 +13,7 @@ export function InvoiceDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { user } = useAuth()
   const { data: invoice, isLoading, error } = useInvoice(id)
+  const { data: allInvoices = [] } = useInvoices()
 
   const { data: fileUrls } = useQuery({
     queryKey: ['invoice-files', id],
@@ -49,6 +51,7 @@ export function InvoiceDetailPage() {
         onExportExcel={() => exportInvoiceToExcel(invoice)}
         onExportPdf={() => exportInvoiceToPdf(invoice)}
       />
+      <ProductPriceHistory invoice={invoice} allInvoices={allInvoices} />
     </div>
   )
 }

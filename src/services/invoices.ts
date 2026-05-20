@@ -1,5 +1,6 @@
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import type { InvoiceFilters, InvoiceWithItems, ParsedNfe } from '../types/nfe'
+import { filterInvoices } from '../utils/invoiceFilters'
 import {
   isPdfColumnMissing,
   isSchemaMissingError,
@@ -169,13 +170,6 @@ export async function fetchInvoices(
   if (filters?.dateTo) {
     query = query.lte('data_emissao', `${filters.dateTo}T23:59:59`)
   }
-  if (filters?.search?.trim()) {
-    const term = `%${filters.search.trim()}%`
-    query = query.or(
-      `numero_nf.ilike.${term},emitente.ilike.${term},chave_acesso.ilike.${term}`,
-    )
-  }
-
   const { data, error } = await query
   if (error) {
     if (isSchemaMissingError(error)) {
@@ -183,7 +177,7 @@ export async function fetchInvoices(
     }
     throw error
   }
-  return (data ?? []) as InvoiceWithItems[]
+  return filterInvoices((data ?? []) as InvoiceWithItems[], filters)
 }
 
 export async function fetchInvoiceById(id: string): Promise<InvoiceWithItems> {

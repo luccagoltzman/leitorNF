@@ -32,7 +32,8 @@ export function DashboardPage() {
 
   const stats = useMemo(() => {
     const total = invoices.reduce((sum, inv) => sum + (inv.valor_total ?? 0), 0)
-    return { count: invoices.length, total }
+    const withoutPdf = invoices.filter((inv) => !inv.pdf_url).length
+    return { count: invoices.length, total, withoutPdf }
   }, [invoices])
 
   return (
@@ -63,9 +64,14 @@ export function DashboardPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <StatCard label="Notas processadas" value={String(stats.count)} />
         <StatCard label="Valor total" value={formatCurrency(stats.total)} />
+        <StatCard
+          label="Sem PDF (pendentes)"
+          value={String(stats.withoutPdf)}
+          warn={stats.withoutPdf > 0}
+        />
       </div>
 
       <SearchFilters filters={filters} onChange={setFilters} />
@@ -128,11 +134,23 @@ export function DashboardPage() {
   )
 }
 
-function StatCard({ label, value }: { label: string; value: string }) {
+function StatCard({
+  label,
+  value,
+  warn,
+}: {
+  label: string
+  value: string
+  warn?: boolean
+}) {
   return (
     <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
       <p className="text-sm text-muted">{label}</p>
-      <p className="mt-1 text-2xl font-bold text-slate-900">{value}</p>
+      <p
+        className={`mt-1 text-2xl font-bold ${warn ? 'text-amber-700' : 'text-slate-900'}`}
+      >
+        {value}
+      </p>
     </div>
   )
 }

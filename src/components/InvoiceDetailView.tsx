@@ -1,3 +1,4 @@
+import { ProofExportButton } from './ProofExportButton'
 import type { InvoiceWithItems } from '../types/nfe'
 import {
   formatCnpjCpf,
@@ -37,6 +38,7 @@ export function InvoiceDetailView({
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <ProofExportButton invoice={invoice} variant="primary" />
           {storedPdfUrl && (
             <a
               href={storedPdfUrl}

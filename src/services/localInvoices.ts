@@ -4,6 +4,7 @@ import type {
   InvoiceWithItems,
   ParsedNfe,
 } from '../types/nfe'
+import { filterInvoices } from '../utils/invoiceFilters'
 
 const STORAGE_KEY = 'leitor-nf-invoices'
 const MAX_INVOICES = 30
@@ -71,24 +72,6 @@ function persist(invoices: InvoiceWithItems[]): void {
   )
 }
 
-function matchesFilters(inv: InvoiceWithItems, filters?: InvoiceFilters): boolean {
-  if (filters?.dateFrom && inv.data_emissao) {
-    if (inv.data_emissao < filters.dateFrom) return false
-  }
-  if (filters?.dateTo && inv.data_emissao) {
-    if (inv.data_emissao > `${filters.dateTo}T23:59:59`) return false
-  }
-  const search = filters?.search?.trim().toLowerCase()
-  if (search) {
-    const haystack = [inv.numero_nf, inv.emitente, inv.chave_acesso]
-      .filter(Boolean)
-      .join(' ')
-      .toLowerCase()
-    if (!haystack.includes(search)) return false
-  }
-  return true
-}
-
 export function getLocalInvoiceCount(): number {
   return loadAll().length
 }
@@ -149,12 +132,11 @@ export function saveLocalInvoice(
 }
 
 export function fetchLocalInvoices(filters?: InvoiceFilters): InvoiceWithItems[] {
-  return loadAll()
-    .filter((inv) => matchesFilters(inv, filters))
-    .sort(
-      (a, b) =>
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-    )
+  const sorted = loadAll().sort(
+    (a, b) =>
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+  )
+  return filterInvoices(sorted, filters)
 }
 
 export function fetchLocalInvoiceById(id: string): InvoiceWithItems {

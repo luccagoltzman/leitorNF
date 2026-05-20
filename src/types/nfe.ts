@@ -79,8 +79,12 @@ export interface InvoiceWithItems extends Invoice {
   invoice_items: InvoiceItem[]
 }
 
+export type InvoiceCompletenessFilter = 'all' | 'complete' | 'incomplete'
+
 export interface InvoiceFilters {
   search?: string
+  productSearch?: string
   dateFrom?: string
   dateTo?: string
+  completeness?: InvoiceCompletenessFilter
 }

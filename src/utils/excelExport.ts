@@ -92,3 +92,62 @@ export function exportInvoicesListToExcel(invoices: InvoiceWithItems[]): void {
 export function formatCurrencyForDisplay(value: number | null | undefined): string {
   return formatCurrency(value)
 }
+
+export function proofExcelFileName(invoice: InvoiceWithItems): string {
+  const n = invoice.numero_nf?.replace(/\W/g, '') || invoice.id.slice(0, 8)
+  return `Comprovacao-NF-${n}.xlsx`
+}
+
+export function workbookProofExcel(invoice: InvoiceWithItems): XLSX.WorkBook {
+  const header = [
+    ['COMPROVAÇÃO DE PREÇO — NOTA FISCAL'],
+    [],
+    ['Número NF', invoice.numero_nf ?? ''],
+    ['Série', invoice.serie ?? ''],
+    ['Data de emissão', formatDate(invoice.data_emissao)],
+    ['Emitente (fornecedor)', invoice.emitente ?? ''],
+    ['CNPJ emitente', invoice.emitente_cnpj ?? ''],
+    ['Destinatário', invoice.destinatario ?? ''],
+    ['Chave de acesso', invoice.chave_acesso ?? ''],
+    ['Valor total da NF', invoice.valor_total ?? 0],
+    [],
+    [
+      'Código',
+      'Descrição do produto/serviço',
+      'NCM',
+      'Quantidade',
+      'Valor unitário (R$)',
+      'Valor total do item (R$)',
+    ],
+  ]
+
+  const productRows = invoice.invoice_items.map((item) => [
+    item.codigo ?? '',
+    item.descricao ?? '',
+    item.ncm ?? '',
+    item.quantidade ?? 0,
+    item.valor_unitario ?? 0,
+    item.valor_total ?? 0,
+  ])
+
+  const footer = [
+    [],
+    [
+      'Documento gerado para fins de comprovação de preço em processos licitatórios.',
+    ],
+    [`Gerado em: ${new Date().toLocaleString('pt-BR')}`],
+  ]
+
+  const wb = XLSX.utils.book_new()
+  const ws = XLSX.utils.aoa_to_sheet([...header, ...productRows, ...footer])
+  ws['!cols'] = [
+    { wch: 14 },
+    { wch: 48 },
+    { wch: 12 },
+    { wch: 12 },
+    { wch: 18 },
+    { wch: 18 },
+  ]
+  XLSX.utils.book_append_sheet(wb, ws, 'Comprovação')
+  return wb
+}

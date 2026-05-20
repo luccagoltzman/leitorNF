@@ -134,3 +134,109 @@ export function invoiceToPdfBlob(invoice: InvoiceWithItems): Blob {
 export function exportInvoiceToPdf(invoice: InvoiceWithItems): void {
   buildInvoicePdf(invoice).save(pdfFileName(invoice))
 }
+
+export function proofPdfFileName(invoice: InvoiceWithItems): string {
+  const n = invoice.numero_nf?.replace(/\W/g, '') || invoice.id.slice(0, 8)
+  return `Comprovacao-NF-${n}.pdf`
+}
+
+export function buildProofPdf(invoice: InvoiceWithItems): jsPDF {
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' })
+  const margin = 14
+  let y = 18
+
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(15)
+  doc.text('Comprovação de Preço', margin, y)
+
+  y += 7
+  doc.setFontSize(10)
+  doc.setFont('helvetica', 'normal')
+  doc.text(
+    'Documento auxiliar para processos licitatórios — baseado na NF-e cadastrada.',
+    margin,
+    y,
+  )
+
+  y += 6
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(12)
+  doc.text(
+    `NF ${invoice.numero_nf ?? '-'}${invoice.serie ? ` · Série ${invoice.serie}` : ''}`,
+    margin,
+    y,
+  )
+
+  const resumoBody: string[][] = [
+    ['Data da compra (emissão)', formatDate(invoice.data_emissao)],
+    ['Fornecedor', invoice.emitente ?? '-'],
+    ['CNPJ fornecedor', formatCnpjCpf(invoice.emitente_cnpj)],
+    ['Comprador', invoice.destinatario ?? '-'],
+    ['Chave NF-e', invoice.chave_acesso ?? '-'],
+    ['Valor total da nota', formatCurrency(invoice.valor_total)],
+  ]
+
+  autoTable(doc, {
+    startY: y + 4,
+    head: [['Informação', 'Valor']],
+    body: resumoBody,
+    theme: 'striped',
+    styles: { fontSize: 9, cellPadding: 2 },
+    headStyles: { fillColor: [22, 101, 52] },
+    columnStyles: {
+      0: { cellWidth: 52, fontStyle: 'bold' },
+      1: { cellWidth: 123 },
+    },
+    margin: { left: margin, right: margin },
+  })
+
+  const afterResumo =
+    (doc as jsPDF & { lastAutoTable?: { finalY: number } }).lastAutoTable
+      ?.finalY ?? y + 40
+
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(11)
+  doc.text('Itens e preços comprovados', margin, afterResumo + 10)
+
+  const items = invoice.invoice_items ?? []
+  autoTable(doc, {
+    startY: afterResumo + 14,
+    head: [['Descrição', 'Qtd', 'Valor unitário', 'Total']],
+    body: items.map((item) => [
+      (item.descricao ?? '').slice(0, 90),
+      formatQuantity(item.quantidade),
+      formatCurrency(item.valor_unitario),
+      formatCurrency(item.valor_total),
+    ]),
+    theme: 'grid',
+    styles: { fontSize: 8, cellPadding: 2 },
+    headStyles: { fillColor: [22, 101, 52], fontSize: 8 },
+    columnStyles: {
+      0: { cellWidth: 85 },
+      1: { cellWidth: 22, halign: 'right' },
+      2: { cellWidth: 35, halign: 'right' },
+      3: { cellWidth: 35, halign: 'right' },
+    },
+    margin: { left: margin, right: margin },
+  })
+
+  const finalY =
+    (doc as jsPDF & { lastAutoTable?: { finalY: number } }).lastAutoTable
+      ?.finalY ?? afterResumo + 50
+
+  doc.setFontSize(8)
+  doc.setTextColor(80, 80, 80)
+  doc.text(
+    'Anexe o PDF original da NF-e (DANFE) quando disponível. Este resumo não substitui o documento fiscal oficial.',
+    margin,
+    finalY + 12,
+    { maxWidth: 180 },
+  )
+  doc.text(
+    `Gerado em ${new Date().toLocaleString('pt-BR')} · Leitor NF-e`,
+    margin,
+    doc.internal.pageSize.height - 10,
+  )
+
+  return doc
+}

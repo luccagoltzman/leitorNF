@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { ProofExportButton } from './ProofExportButton'
 import type { InvoiceWithItems } from '../types/nfe'
 import { formatCurrency, formatDate } from '../utils/format'
 
@@ -54,7 +55,11 @@ export function InvoiceTable({
                     {inv.numero_nf ?? '—'}
                     {inv.serie ? ` / ${inv.serie}` : ''}
                   </Link>
-                  {!inv.pdf_url && (
+                  {inv.pdf_url ? (
+                    <span className="ml-2 rounded bg-emerald-100 px-1.5 py-0.5 text-xs text-emerald-800">
+                      Completa
+                    </span>
+                  ) : (
                     <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-800">
                       Sem PDF
                     </span>
@@ -74,6 +79,7 @@ export function InvoiceTable({
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex justify-end gap-2">
+                    <ProofExportButton invoice={inv} />
                     <Link
                       to={`/notas/${inv.id}`}
                       className="rounded-md px-2 py-1 text-xs font-medium text-primary-600 hover:bg-primary-50"
